@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f6f3" />
+  <title>上海市考</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f7f6f3;
+      --ink: #292c2d;
+      --muted: #96958e;
+      --line: #deded8;
+      --accent: #b5755d;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      min-height: 100svh;
+      background: var(--page);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Center the exam as a single visual group, not individual elements. */
+    .layout {
+      position: relative;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 58px 20px 36px;
+    }
+    .exam-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .exam-types {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin: 0 0 clamp(18px, 3vh, 24px);
+      padding: 4px;
+      border: 1px solid #e4e4de;
+      border-radius: 100px;
+      background: #eeeee9;
+    }
+    .exam-type {
+      appearance: none;
+      -webkit-tap-highlight-color: transparent;
+      border: 0;
+      border-radius: 100px;
+      padding: 9px 21px;
+      min-width: 80px;
+      background: transparent;
+      color: #858781;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 550;
+      letter-spacing: .12em;
+      transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+    .exam-type[aria-pressed="true"] {
+      color: #343b3c;
+      background: #fffefa;
+      box-shadow: 0 2px 8px rgba(36,42,42,.075);
+    }
+    .exam-type:focus-visible { outline: 3px solid rgba(181,117,93,.45); outline-offset: 2px; }
+    .exam-type:not([aria-pressed="true"]):hover { color: #424949; }
+    .eyebrow {
+      margin: 0 0 clamp(18px, 3vh, 27px);
+      color: #4d5250;
+      font-size: clamp(19px, 2.2vw, 24px);
+      font-weight: 520;
+      line-height: 1.45;
+      letter-spacing: .19em;
+      text-indent: .19em;
+    }
+    .clock-wrap {
+      width: min(440px, 82vw, 53svh);
+      max-width: 100%;
+      aspect-ratio: 1;
+      margin-inline: auto;
+    }
+    .clock {
+      width: 100%; height: auto; display: block;
+      overflow: visible;
+      filter: drop-shadow(0 20px 21px rgba(36, 42, 42, .075)) drop-shadow(0 3px 5px rgba(36,42,42,.04));
+    }
+    .clock-face { fill: url(#dialGradient); }
+    .clock-bezel { fill: url(#bezelGradient); stroke: #d8d7d2; stroke-width: 1.2; }
+    .clock-ring { fill: none; stroke: #e8e7e1; stroke-width: 1.2; }
+    .tick { stroke: #a6a7a1; stroke-linecap: round; }
+    .tick.major { stroke: #535a59; }
+    .numeral {
+      fill: #424748;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 25px;
+      font-weight: 400;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .clock-hands { filter: drop-shadow(1px 2px 1px rgba(34,40,42,.13)); }
+    .hour-hand { fill: #343a3b; }
+    .minute-hand { fill: #363d3e; }
+    .second-hand { stroke: var(--accent); stroke-width: 1.9; stroke-linecap: round; }
+    .pivot-outer { fill: #343a3b; }
+    .pivot-inner { fill: var(--accent); }
+    .meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-top: clamp(18px, 2.8vh, 26px);
+      color: #777a77;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .09em;
+      font-variant-numeric: tabular-nums;
+    }
+    .meta .dash { width: 32px; height: 1px; background: #b9bab3; }
+    .status {
+      min-height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin: clamp(12px, 2vh, 18px) 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .13em;
+    }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #bbbcb6; }
+    .status.running .status-dot { background: #79a18e; box-shadow: 0 0 0 3px rgba(121,161,142,.11); }
+    .status.ended { color: #9d624e; }
+    .status.paused .status-dot { background: #c99a64; }
+    .status.ended .status-dot { background: var(--accent); }
+    .action-zone {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 66px;
+      margin-top: 9px;
+    }
+    .control {
+      -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: 146px;
+      min-height: 46px;
+      border: 1px solid transparent;
+      border-radius: 100px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .035em;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease, box-shadow .18s ease;
+    }
+    .control svg { width: 15px; height: 15px; flex: none; }
+    .control svg[hidden] { display: none; }
+    .control.primary {
+      background: #343b3c;
+      color: #fff;
+      box-shadow: 0 7px 17px rgba(41,47,48,.11);
+    }
+    .control.secondary {
+      background: rgba(255,255,255,.44);
+      color: #434849;
+      border-color: #d9d9d2;
+    }
+    .control.primary:not(:disabled):hover { background: #252c2d; box-shadow: 0 9px 22px rgba(41,47,48,.16); }
+    .control.secondary:not(:disabled):hover { background: #fffefa; border-color: #bfc1b9; }
+    .control:not(:disabled):active { transform: scale(.975); }
+    .control:focus-visible { outline: 3px solid rgba(181,117,93,.45); outline-offset: 4px; }
+    .control:disabled { cursor: default; opacity: .35; box-shadow: none; }
+    .control[hidden] { display: none; }
+    /* Quiet, independent control that doesn't offset the centered clock. */
+    .fullscreen-button {
+      position: fixed;
+      z-index: 5;
+      top: max(24px, env(safe-area-inset-top));
+      right: max(28px, env(safe-area-inset-right));
+      -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid #dfdfda;
+      border-radius: 11px;
+      background: rgba(255,255,255,.40);
+      color: #777b76;
+      font: inherit;
+      font-size: 12px;
+      letter-spacing: .04em;
+      cursor: pointer;
+      transition: background .18s ease, color .18s ease, border-color .18s ease;
+    }
+    .fullscreen-button svg { width: 16px; height: 16px; }
+    .fullscreen-button svg[hidden] { display: none; }
+    .fullscreen-button:hover { color: var(--ink); border-color: #c6c7c0; background: #fffefa; }
+    .fullscreen-button:focus-visible { outline: 3px solid rgba(181,117,93,.45); outline-offset: 3px; }
+    @media (max-height: 650px) {
+      .layout { padding-top: 44px; padding-bottom: 18px; }
+      .exam-types { margin-bottom: 13px; }
+      .eyebrow { margin-bottom: 13px; }
+      .clock-wrap { width: min(400px, 70vw, 44svh); }
+      .meta { margin-top: 13px; }
+      .status { margin-top: 10px; }
+      .action-zone { min-height: 55px; margin-top: 4px; }
+    }
+    @media (max-width: 420px) {
+      .layout { padding-inline: 14px; }
+      .eyebrow { font-size: 19px; letter-spacing: .15em; text-indent: .15em; }
+      .clock-wrap { width: min(370px, 86vw, 46svh); }
+      .action-zone { gap: 10px; }
+      .control { width: min(146px, 43vw); }
+      .fullscreen-button { top: 13px; right: 14px; min-height: 34px; padding: 0 10px; }
+    }
+    @media (max-height: 480px) and (orientation: landscape) {
+      .layout { padding: 8px; }
+      .exam-panel { gap: 0; }
+      .exam-types { margin-bottom: 6px; padding: 2px; }
+      .exam-type { padding: 6px 16px; }
+      .eyebrow { margin-bottom: 6px; font-size: 17px; }
+      .clock-wrap { width: min(260px, 43svh); }
+      .meta { margin-top: 6px; }
+      .status { margin-top: 5px; }
+      .action-zone { min-height: 40px; margin-top: 0; }
+      .control { min-height: 37px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .control, .fullscreen-button, .exam-type { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <button type="button" class="fullscreen-button" id="fullscreenButton" aria-label="全屏显示" title="全屏显示">
+    <svg id="fullscreenEnterIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" /></svg>
+    <svg id="fullscreenExitIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 9h6V3M21 9h-6V3M3 15h6v6M21 15h-6v6" /></svg>
+    <span id="fullscreenLabel">全屏</span>
+  </button>
+  <main class="layout">
+    <section class="exam-panel" aria-label="模拟考试计时">
+      <div class="exam-types" role="group" aria-label="选择考试科目">
+        <button type="button" class="exam-type" data-exam="xingce" aria-pressed="true">行测</button>
+        <button type="button" class="exam-type" data-exam="shenlun" aria-pressed="false">申论</button>
+      </div>
+    <div class="clock-wrap">
+      <svg class="clock" viewBox="0 0 440 440" role="img" aria-label="上海市考" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="dialGradient" cx="40%" cy="32%" r="85%">
+            <stop offset="0%" stop-color="#fffefa" />
+            <stop offset="100%" stop-color="#f8f8f4" />
+          </radialGradient>
+          <linearGradient id="bezelGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f2f1ec" />
+            <stop offset="47%" stop-color="#e5e5e0" />
+            <stop offset="100%" stop-color="#f9f9f6" />
+          </linearGradient>
+        </defs>
+        <circle class="clock-bezel" cx="220" cy="220" r="208" />
+        <circle class="clock-face" cx="220" cy="220" r="197" />
+        <circle class="clock-ring" cx="220" cy="220" r="196" />
+        <circle fill="none" stroke="#e8e8e2" stroke-width=".7" cx="220" cy="220" r="185" />
+        <g id="ticks"></g>
+        <g id="numerals"></g>
+        <g class="clock-hands">
+          <g id="hour" transform="rotate(45 220 220)">
+            <path class="hour-hand" d="M215.6 239 L212.6 157 Q212.2 148 220 144 Q227.8 148 227.4 157 L224.4 239 Z" />
+          </g>
+          <g id="minute" transform="rotate(180 220 220)">
+            <path class="minute-hand" d="M217 242 L215.8 111 Q215.8 103 220 99 Q224.2 103 224.2 111 L223 242 Z" />
+          </g>
+          <g id="second" transform="rotate(0 220 220)">
+            <line class="second-hand" x1="220" y1="264" x2="220" y2="83" />
+            <circle cx="220" cy="93" r="3.1" fill="var(--accent)" />
+          </g>
+        </g>
+        <circle class="pivot-outer" cx="220" cy="220" r="6.5" />
+        <circle class="pivot-inner" cx="220" cy="220" r="2.9" />
+      </svg>
+    </div>
+    <div class="meta" aria-label="考试时间">
+      <span id="rangeStart">13:30</span>
+      <span class="dash" aria-hidden="true"></span>
+      <span id="rangeEnd">15:30</span>
+    </div>
+    <p class="status" id="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span id="statusText">等待考试开始</span></p>
+    <div class="action-zone" role="group" aria-label="考试控制">
+      <button type="button" class="control primary" id="startButton">
+        <svg id="actionPlayIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5 18.5 12 8 18.5Z" fill="currentColor" stroke="none" /></svg>
+        <svg id="actionPauseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" hidden><path d="M8 5v14M16 5v14" /></svg>
+        <svg id="actionRestartIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3.5 11a8.5 8.5 0 1 1 2.4 6M3.5 4v7h7" /></svg>
+        <span id="startLabel">开始考试</span>
+      </button>
+      <button type="button" class="control secondary" id="restartButton" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11a8.5 8.5 0 1 1 2.4 6M3.5 4v7h7" /></svg>
+        <span>重新考试</span>
+      </button>
+    </div>
+    </section>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const NS = 'http://www.w3.org/2000/svg';
+      const CENTER = 220;
+      const EXAMS = {
+        xingce: {
+          title: '行测',
+          start: '13:30', end: '15:30',
+          startMs: (13 * 60 + 30) * 60 * 1000,
+          durationMs: 120 * 60 * 1000
+        },
+        shenlun: {
+          title: '申论',
+          start: '09:00', end: '11:30',
+          startMs: 9 * 60 * 60 * 1000,
+          durationMs: 150 * 60 * 1000
+        }
+      };
+      const STORAGE_KEY = 'shanghai-mock-exam-analog-v3';
+      const PREVIOUS_STORAGE_KEY = 'mock-exam-analog-clock-v2';
+      const ticks = document.getElementById('ticks');
+      const numerals = document.getElementById('numerals');
+      const hour = document.getElementById('hour');
+      const minute = document.getElementById('minute');
+      const second = document.getElementById('second');
+      const rangeStart = document.getElementById('rangeStart');
+      const rangeEnd = document.getElementById('rangeEnd');
+      const examTypes = Array.from(document.querySelectorAll('[data-exam]'));
+      const status = document.getElementById('status');
+      const statusText = document.getElementById('statusText');
+      const startButton = document.getElementById('startButton');
+      const startLabel = document.getElementById('startLabel');
+      const restartButton = document.getElementById('restartButton');
+      const actionPlayIcon = document.getElementById('actionPlayIcon');
+      const actionPauseIcon = document.getElementById('actionPauseIcon');
+      const actionRestartIcon = document.getElementById('actionRestartIcon');
+      const fullscreenButton = document.getElementById('fullscreenButton');
+      const fullscreenLabel = document.getElementById('fullscreenLabel');
+      const fullscreenEnterIcon = document.getElementById('fullscreenEnterIcon');
+      const fullscreenExitIcon = document.getElementById('fullscreenExitIcon');
+
+      const freshSession = () => ({ mode: 'ready', elapsed: 0, resumedAt: null });
+      const sessions = { xingce: freshSession(), shenlun: freshSession() };
+      let selectedExam = 'xingce';
+      let animationFrame = 0;
+      let phase = '';
+
+      for (let i = 0; i < 60; i++) {
+        const angle = (i * 6 - 90) * Math.PI / 180;
+        const major = i % 5 === 0;
+        const inner = major ? 164 : 175;
+        const outer = 184;
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', (CENTER + Math.cos(angle) * inner).toFixed(3));
+        line.setAttribute('y1', (CENTER + Math.sin(angle) * inner).toFixed(3));
+        line.setAttribute('x2', (CENTER + Math.cos(angle) * outer).toFixed(3));
+        line.setAttribute('y2', (CENTER + Math.sin(angle) * outer).toFixed(3));
+        line.setAttribute('stroke-width', major ? '2.2' : '1');
+        line.setAttribute('class', major ? 'tick major' : 'tick');
+        ticks.appendChild(line);
+      }
+      for (let n = 1; n <= 12; n++) {
+        const angle = (n * 30 - 90) * Math.PI / 180;
+        const r = 136;
+        const label = document.createElementNS(NS, 'text');
+        label.setAttribute('x', (CENTER + Math.cos(angle) * r).toFixed(2));
+        label.setAttribute('y', (CENTER + Math.sin(angle) * r + 1).toFixed(2));
+        label.setAttribute('class', 'numeral');
+        label.textContent = String(n);
+        numerals.appendChild(label);
+      }
+
+      function validatedSession(saved, exam) {
+        if (!saved || !['ready', 'running', 'paused', 'ended'].includes(saved.mode)) return null;
+        if (!Number.isFinite(saved.elapsed) || saved.elapsed < 0 || saved.elapsed > exam.durationMs) return null;
+        if (saved.mode === 'running' &&
+            (!Number.isFinite(saved.resumedAt) || saved.resumedAt > Date.now() || saved.resumedAt <= 0)) return null;
+        return {
+          mode: saved.mode,
+          elapsed: saved.elapsed,
+          resumedAt: saved.mode === 'running' ? saved.resumedAt : null
+        };
+      }
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ selectedExam, sessions }));
+        } catch (_) {}
+      }
+      function restoreState() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (data && data.sessions) {
+            for (const key of Object.keys(EXAMS)) {
+              sessions[key] = validatedSession(data.sessions[key], EXAMS[key]) || freshSession();
+            }
+            if (EXAMS[data.selectedExam]) selectedExam = data.selectedExam;
+            return;
+          }
+          // Preserve an existing 行测 attempt when upgrading from the previous webpage.
+          const old = JSON.parse(localStorage.getItem(PREVIOUS_STORAGE_KEY));
+          const migrated = validatedSession(old, EXAMS.xingce);
+          if (migrated) sessions.xingce = migrated;
+        } catch (_) {}
+      }
+      function currentElapsed(key = selectedExam) {
+        const session = sessions[key];
+        const additional = session.mode === 'running'
+          ? Math.max(0, Date.now() - session.resumedAt) : 0;
+        return Math.min(EXAMS[key].durationMs, session.elapsed + additional);
+      }
+      function finishIfTimeUp(key) {
+        const session = sessions[key];
+        if (session.mode === 'running' && currentElapsed(key) >= EXAMS[key].durationMs) {
+          sessions[key] = {
+            mode: 'ended', elapsed: EXAMS[key].durationMs, resumedAt: null
+          };
+          saveState();
+        }
+      }
+      function setPhase(nextPhase) {
+        if (phase === nextPhase) return;
+        phase = nextPhase;
+        status.className = 'status' + (phase === 'ready' ? '' : ' ' + phase);
+        if (phase === 'ready') {
+          statusText.textContent = '等待考试开始';
+          startLabel.textContent = '开始考试';
+        } else if (phase === 'running') {
+          statusText.textContent = '考试进行中';
+          startLabel.textContent = '暂停考试';
+        } else if (phase === 'paused') {
+          statusText.textContent = '考试已暂停';
+          startLabel.textContent = '继续考试';
+        } else {
+          statusText.textContent = '考试结束';
+          startLabel.textContent = '重新考试';
+        }
+        actionPlayIcon.toggleAttribute('hidden', phase !== 'ready' && phase !== 'paused');
+        actionPauseIcon.toggleAttribute('hidden', phase !== 'running');
+        actionRestartIcon.toggleAttribute('hidden', phase !== 'ended');
+        restartButton.hidden = phase !== 'running' && phase !== 'paused';
+      }
+      function drawClock(elapsedMs) {
+        const total = EXAMS[selectedExam].startMs + elapsedMs;
+        const hours = total / 3_600_000;
+        const mins = total / 60_000;
+        const secs = total / 1000;
+        hour.setAttribute('transform', `rotate(${hours * 30} ${CENTER} ${CENTER})`);
+        minute.setAttribute('transform', `rotate(${mins * 6} ${CENTER} ${CENTER})`);
+        second.setAttribute('transform', `rotate(${secs * 6} ${CENTER} ${CENTER})`);
+      }
+      function refresh() {
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+        finishIfTimeUp(selectedExam);
+        drawClock(currentElapsed());
+        setPhase(sessions[selectedExam].mode);
+        if (sessions[selectedExam].mode === 'running' && !document.hidden) {
+          animationFrame = requestAnimationFrame(refresh);
+        }
+      }
+      function pauseCurrentExam() {
+        const session = sessions[selectedExam];
+        if (session.mode !== 'running') return;
+        session.elapsed = currentElapsed();
+        session.resumedAt = null;
+        session.mode = session.elapsed >= EXAMS[selectedExam].durationMs ? 'ended' : 'paused';
+        saveState();
+        refresh();
+      }
+      function beginOrResume() {
+        const session = sessions[selectedExam];
+        if (session.mode === 'running') return;
+        if (session.mode === 'ready' || session.mode === 'ended') session.elapsed = 0;
+        session.mode = 'running';
+        session.resumedAt = Date.now();
+        saveState();
+        refresh();
+      }
+      function restartExam() {
+        const mode = sessions[selectedExam].mode;
+        if ((mode === 'running' || mode === 'paused') &&
+            !window.confirm('确定重新考试吗？')) return;
+        sessions[selectedExam] = freshSession();
+        saveState();
+        refresh();
+      }
+      function handleMainAction() {
+        const mode = sessions[selectedExam].mode;
+        if (mode === 'running') pauseCurrentExam();
+        else if (mode === 'ended') restartExam();
+        else beginOrResume();
+      }
+      function selectExam(key) {
+        if (!EXAMS[key] || key === selectedExam) return;
+        // Switching a subject must not silently leave the previous exam running.
+        if (sessions[selectedExam] && sessions[selectedExam].mode === 'running') pauseCurrentExam();
+        selectedExam = key;
+        finishIfTimeUp(key);
+        const exam = EXAMS[key];
+        rangeStart.textContent = exam.start;
+        rangeEnd.textContent = exam.end;
+        for (const button of examTypes) {
+          button.setAttribute('aria-pressed', String(button.dataset.exam === key));
+        }
+        phase = '';
+        saveState();
+        refresh();
+      }
+      function syncFullscreenButton() {
+        const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+        fullscreenLabel.textContent = isFullscreen ? '退出全屏' : '全屏';
+        fullscreenButton.title = isFullscreen ? '退出全屏' : '全屏显示';
+        fullscreenButton.setAttribute('aria-label', fullscreenButton.title);
+        fullscreenEnterIcon.hidden = isFullscreen;
+        fullscreenExitIcon.hidden = !isFullscreen;
+      }
+      async function toggleFullscreen() {
+        try {
+          if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          } else if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+          } else {
+            window.alert('当前浏览器不支持网页全屏。可尝试使用浏览器菜单进入全屏模式。');
+          }
+        } catch (_) {
+          window.alert('全屏切换未成功，请在浏览器中允许全屏后重试。');
+        }
+        syncFullscreenButton();
+      }
+      fullscreenButton.addEventListener('click', toggleFullscreen);
+      document.addEventListener('fullscreenchange', syncFullscreenButton);
+      document.addEventListener('webkitfullscreenchange', syncFullscreenButton);
+      startButton.addEventListener('click', handleMainAction);
+      restartButton.addEventListener('click', restartExam);
+      for (const button of examTypes) {
+        button.addEventListener('click', () => selectExam(button.dataset.exam));
+      }
+      document.addEventListener('visibilitychange', refresh);
+      restoreState();
+      // Always set title and time range even when restoring a nondefault subject.
+      const initialKey = selectedExam;
+      selectedExam = '';
+      selectExam(initialKey);
+    })();
+  </script>
+</body>
+</html>

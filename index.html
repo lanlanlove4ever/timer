@@ -496,8 +496,6 @@
       }
       function restartExam() {
         const mode = sessions[selectedExam].mode;
-        if ((mode === 'running' || mode === 'paused') &&
-            !window.confirm('确定重新考试吗？')) return;
         sessions[selectedExam] = freshSession();
         saveState();
         refresh();
